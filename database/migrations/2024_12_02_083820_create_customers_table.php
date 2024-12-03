@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users', 'id');
             $table->string('customer_name', 100);
             $table->string('customer_email', 100);
-            $table->string('customer_phone', 15);
+            $table->string('customer_phone', 30);
             $table->text('customer_address');
             $table->timestamps();
         

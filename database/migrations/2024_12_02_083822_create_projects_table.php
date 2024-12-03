@@ -21,6 +21,7 @@ return new class extends Migration
             $table->datetime('project_duration_start');
             $table->datetime('project_duration_end');
             $table->string('project_detail', 255);
+            $table->timestamps();
         });
     }
 

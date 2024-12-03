@@ -64,4 +64,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function interactions()
+    {
+        return $this->hasMany(CustomerInteraction::class, 'user_id');
+    }
 }
+
