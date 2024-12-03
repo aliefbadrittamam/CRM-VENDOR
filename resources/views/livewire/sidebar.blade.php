@@ -1,6 +1,6 @@
 <div x-data="{ openMenu: null }">
     <a href="">
-    <div class="w-full bg-gray-200 p-2 text-center"><a href="dashboard">CRM-VENDOR</div></a>
+    <div class="w-full bg-gray-200 p-2 text-center"><a href="/dashboard">CRM-VENDOR</div></a>
     <div class="flex flex-col p-2 gap-2">
         <!-- Users Menu -->
         <div class="w-full">
@@ -106,7 +106,7 @@
                 </svg>
                 <svg x-show="openMenu === 'marketing'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 transition-transform duration-200">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
-                </svg>
+                </svg> 
             </a>
             <div x-show="openMenu === 'marketing'"
                 x-transition:enter="transition ease-out duration-200"
