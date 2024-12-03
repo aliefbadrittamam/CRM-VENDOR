@@ -15,21 +15,17 @@ class CustomerInteraction extends Model
         'notes'
     ];
 
-    // Relasi ke Customer
     public function customer()
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Customer::class, 'customer_id', 'customer_id');
     }
-
-    // Relasi ke Vendor
     public function vendor()
     {
         return $this->belongsTo(Vendor::class, 'vendor_id', 'vendor_id');
     }
 
-    // Relasi ke User
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }

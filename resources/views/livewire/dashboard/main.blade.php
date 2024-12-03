@@ -130,50 +130,163 @@
             </div>
         </div>
 
-        <!-- Recent Interactions -->
-        <div class="bg-white rounded-lg shadow ">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold mb-4">Recent Customer Interactions</h3>
-                <div class="space-y-4">
-                    @foreach($recentInteractions as $interaction)
-                    <div class="flex items-start space-x-3">
-                        <div class="bg-blue-100 rounded-full p-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="font-medium">{{ $interaction->customer->customer_name ?? 'N/A' }}</p>
-                            <p class="text-sm text-gray-500">{{ $interaction->interaction_type }} - {{ $interaction->created_at->diffForHumans() }}</p>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Charts Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 mt-5">
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold mb-4">Project Timeline</h3>
-            <canvas id="projectChart" wire:ignore></canvas>
-        </div>
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold mb-4">Revenue Overview</h3>
-            <canvas id="revenueChart" wire:ignore></canvas>
-        </div>
-    </div>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 mt-5">
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold mb-4">Grafik Pie</h3>
-            <canvas id="pieChart" wire:ignore></canvas>
-        </div>
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold mb-4">Grafik Lainnya</h3>
-            <canvas id="otherChart" wire:ignore></canvas>
-        </div>
-      </div>
+       <!-- Recent Customer Interactions -->
+<div class="bg-white rounded-lg shadow">
+   <div class="p-6">
+       <h3 class="text-lg font-semibold mb-4">Recent Customer Interactions</h3>
+       <div class="divide-y divide-gray-200">
+           @forelse($recentInteractions as $interaction)
+           <div class="py-4">
+               <div class="flex items-start space-x-4">
+                   <!-- Icon berdasarkan tipe interaksi -->
+                   <div class="flex-shrink-0">
+                       @switch($interaction->interaction_type)
+                           @case('Call')
+                               <div class="bg-blue-100 p-2 rounded-full">
+                                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                                       <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
+                                   </svg>
+                               </div>
+                               @break
+                           @case('Email')
+                               <div class="bg-green-100 p-2 rounded-full">
+                                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                                       <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                                       <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+                                   </svg>
+                               </div>
+                               @break
+                           @case('Meeting')
+                               <div class="bg-purple-100 p-2 rounded-full">
+                                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-600" viewBox="0 0 20 20" fill="currentColor">
+                                       <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                   </svg>
+                               </div>
+                               @break
+                           @default
+                               <div class="bg-gray-100 p-2 rounded-full">
+                                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                                       <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"/>
+                                   </svg>
+                               </div>
+                       @endswitch
+                   </div>
+                   <!-- Konten interaksi -->
+                   <div class="flex-1 min-w-0">
+                       <div class="flex justify-between">
+                           <p class="text-sm font-medium text-gray-900 truncate">
+                               {{ $interaction->customer->customer_name ?? 'N/A' }}
+                           </p>
+                           <p class="text-sm text-gray-500">
+                               {{ Carbon\Carbon::parse($interaction->interaction_date)->diffForHumans() }}
+                           </p>
+                       </div>
+                       @if($interaction->notes)
+                           <p class="mt-1 text-sm text-gray-500">
+                               {{ Str::limit($interaction->notes, 100) }}
+                           </p>
+                       @endif
+                       <div class="mt-2 flex items-center text-sm text-gray-500">
+                           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                               @switch($interaction->interaction_type)
+                                   @case('Call') bg-blue-100 text-blue-800 @break
+                                   @case('Email') bg-green-100 text-green-800 @break
+                                   @case('Meeting') bg-purple-100 text-purple-800 @break
+                                   @default bg-gray-100 text-gray-800
+                               @endswitch">
+                               {{ $interaction->interaction_type }}
+                           </span>
+                           @if($interaction->vendor)
+                               <span class="ml-2 text-gray-400">•</span>
+                               <span class="ml-2">{{ $interaction->vendor->vendor_name }}</span>
+                           @endif
+                       </div>
+                   </div>
+               </div>
+           </div>
+           @empty
+           <div class="py-4 text-center text-gray-500">
+               No recent interactions found
+           </div>
+           @endforelse
+       </div>
+   </div>
 </div>
+  <!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+    <!-- Project Timeline -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Project Timeline</h3>
+        <div class="h-[400px]" wire:ignore>
+            <div id="timelineChart"></div>
+        </div>
+    </div>
+
+    <!-- Revenue Overview -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold mb-4">Revenue Overview</h3>
+        <div class="h-[400px]" wire:ignore>
+            <canvas id="revenueChart"></canvas>
+        </div>
+    </div>
+</div>
+    
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener('livewire:load', function() {
+    // Project Timeline Chart
+    const timelineOptions = {
+        series: [{
+            data: @json($chartData['timelineData'])
+        }],
+        chart: {
+            height: 350,
+            type: 'rangeBar'
+        },
+        plotOptions: {
+            bar: {
+                horizontal: true
+            }
+        },
+        xaxis: {
+            type: 'datetime'
+        }
+    };
+
+    const timelineChart = new ApexCharts(document.getElementById("timelineChart"), timelineOptions);
+    timelineChart.render();
+
+    // Revenue Chart
+    const revenueChart = new Chart(document.getElementById('revenueChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: @json($chartData['revenueLabels']),
+            datasets: [{
+                label: 'Revenue',
+                data: @json($chartData['revenueData']),
+                borderColor: '#10B981',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Handle refresh events
+    Livewire.on('refreshCharts', () => {
+        timelineChart.updateSeries([{
+            data: @json($chartData['timelineData'])
+        }]);
+        revenueChart.update();
+    });
+});
+</script>
+@endpush
+        
+  
 
 @push('scripts')
 <script>
@@ -181,10 +294,10 @@
         const projectChart = new Chart(document.getElementById('projectChart'), {
             type: 'bar',
             data: {
-                labels: @json($projectLabels),
+                labels: @json($chartData['projectLabels']),
                 datasets: [{
                     label: 'Projects',
-                    data: @json($projectData),
+                    data: @json($chartData['projectData']),
                     backgroundColor: '#3B82F6',
                     borderWidth: 1
                 }]
@@ -206,10 +319,10 @@
         const revenueChart = new Chart(document.getElementById('revenueChart'), {
             type: 'line',
             data: {
-                labels: @json($revenueLabels),
+                labels: @json($chartData['revenueLabels']),
                 datasets: [{
                     label: 'Revenue',
-                    data: @json($revenueData),
+                    data: @json($chartData['revenueData']),
                     borderColor: '#10B981',
                     tension: 0.1,
                     fill: false
@@ -240,12 +353,12 @@
         });
 
         Livewire.on('refreshCharts', () => {
-            projectChart.data.labels = @json($projectLabels);
-            projectChart.data.datasets[0].data = @json($projectData);
+            projectChart.data.labels = @json($chartData['projectLabels']);
+            projectChart.data.datasets[0].data = @json($chartData['projectData']);
             projectChart.update();
 
-            revenueChart.data.labels = @json($revenueLabels);
-            revenueChart.data.datasets[0].data = @json($revenueData);
+            revenueChart.data.labels = @json($chartData['revenueLabels']);
+            revenueChart.data.datasets[0].data = @json($chartData['revenueData']);
             revenueChart.update();
         });
     });
