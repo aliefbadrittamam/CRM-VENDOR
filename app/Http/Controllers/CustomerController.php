@@ -11,7 +11,16 @@ class CustomerController extends Controller
      */
     public function index()
     {
-        //
+        return view('customers.index');
+    }
+
+    public function interaction()
+    {
+        return view('customers.interaction');
+    }
+    public function segmentation()
+    {
+        return view('customers.segmentation');
     }
 
     /**

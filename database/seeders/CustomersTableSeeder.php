@@ -3,22 +3,23 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\Customer;
+use App\Models\User;
 
 class CustomersTableSeeder extends Seeder
 {
     public function run()
     {
-        DB::table('customers')->insert([
-            [
-                'user_id' => 2, 
-                'customer_name' => 'John Doe',
-                'customer_email' => 'johndoe@example.com',
-                'customer_phone' => '08123456789',
-                'customer_address' => 'Jl. Example No.1, Jakarta',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
+        $customerUsers = User::where('role', 'Customers')->get();
+
+        foreach($customerUsers as $user) {
+            Customer::create([
+                'user_id' => $user->id,
+                'customer_name' => fake()->company,
+                'customer_email' => fake()->email,
+                'customer_phone' => fake()->phoneNumber,
+                'customer_address' => fake()->address,
+            ]);
+        }
     }
 }

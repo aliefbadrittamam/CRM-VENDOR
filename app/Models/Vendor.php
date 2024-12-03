@@ -14,4 +14,8 @@ class Vendor extends Model
 
     // Jika kolom primary key bukan integer, Anda bisa mengubah tipe datanya
     protected $keyType = 'int';
+    public function interactions()
+    {
+        return $this->hasMany(CustomerInteraction::class, 'vendor_id');
+    }
 }

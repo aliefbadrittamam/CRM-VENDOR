@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use App\Models\Vendor;
 use App\Models\User;
 
-class VendorsTableSeeder extends Seeder
+class VendorSeeder extends Seeder
 {
     public function run()
     {
@@ -15,10 +15,10 @@ class VendorsTableSeeder extends Seeder
         foreach($vendorUsers as $user) {
             Vendor::create([
                 'user_id' => $user->id,
-                'vendor_name' => fake()->company,
-                'vendor_phone' => fake()->phoneNumber,
-                'vendor_email' => fake()->email,
-                'vendor_address' => fake()->address,
+                'vendor_name' => fake()->company(),
+                'vendor_phone' => fake()->phoneNumber(),
+                'vendor_email' => $user->email,
+                'vendor_address' => fake()->address(),
             ]);
         }
     }

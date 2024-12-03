@@ -2,16 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Customer extends Model
 {
-    use HasFactory;
+    protected $guarded = [];
 
-    // Relasi dengan Projects
+    public function interactions()
+    {
+        return $this->hasMany(CustomerInteraction::class, 'customer_id');
+    }
+
     public function projects()
     {
-        return $this->hasMany(Project::class, 'customer_id', 'id');
+        return $this->hasMany(Project::class);
     }
 }

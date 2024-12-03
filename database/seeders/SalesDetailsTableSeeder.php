@@ -2,19 +2,30 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB; 
+use App\Models\SaleDetail;
+use App\Models\Sale;
+use App\Models\Product;
 
-class SalesDetailsTableSeeder extends Seeder 
+class SalesDetailsTableSeeder extends Seeder
 {
     public function run()
     {
-        DB::table('sales_details')->insert([
-            ['sale_id' => 1, 'product_id' => 1, 'quantity' => 2, 'subtotal' => 2000000], 
-            ['sale_id' => 1, 'product_id' => 2, 'quantity' => 1, 'subtotal' => 2000000],
-            ['sale_id' => 2, 'product_id' => 1, 'quantity' => 3, 'subtotal' => 3000000],
-            ['sale_id' => 2, 'product_id' => 2, 'quantity' => 2, 'subtotal' => 4000000],  
-        ]);
+        $sales = Sale::all();
+        $products = Product::all();
+
+        foreach($sales as $sale) {
+            $numberOfProducts = rand(1, 3);
+            for($i = 0; $i < $numberOfProducts; $i++) {
+                $product = $products->random();
+                $quantity = rand(1, 5);
+                SaleDetail::create([
+                    'sale_id' => $sale->id,
+                    'product_id' => $product->id,
+                    'quantity' => $quantity,
+                    'subtotal' => $product->product_price * $quantity
+                ]);
+            }
+        }
     }
 }

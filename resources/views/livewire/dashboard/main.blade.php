@@ -1,4 +1,36 @@
 <div>
+    <!-- Filter Section -->
+<div class="bg-white rounded-lg shadow p-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Date Range</label>
+            <select wire:model="dateRange" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <option value="today">Today</option>
+                <option value="this_week">This Week</option>
+                <option value="this_month">This Month</option>
+                <option value="this_year">This Year</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Vendor</label>
+            <select wire:model="selectedVendor" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                <option value="">All Vendors</option>
+                @foreach($vendors as $vendor)
+                    <option value="{{ $vendor->id }}">{{ $vendor->vendor_name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Customer</label>
+            <select wire:model="selectedCustomer" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                <option value="">All Customers</option>
+                @foreach($customers as $customer)
+                    <option value="{{ $customer->id }}">{{ $customer->customer_name }}</option>
+                @endforeach
+            </select>
+        </div>
+    </div>
+</div>
     <!-- Stats Overview -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <!-- Projects Card -->
@@ -125,6 +157,16 @@
             <canvas id="revenueChart" wire:ignore></canvas>
         </div>
     </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 mt-5">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Grafik Pie</h3>
+            <canvas id="pieChart" wire:ignore></canvas>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Grafik Lainnya</h3>
+            <canvas id="otherChart" wire:ignore></canvas>
+        </div>
+      </div>
 </div>
 
 @push('scripts')
@@ -166,3 +208,4 @@
 </script>
 @endpush
 </div>
+

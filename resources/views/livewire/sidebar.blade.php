@@ -1,5 +1,6 @@
 <div x-data="{ openMenu: null }">
-    <div class="w-full bg-gray-200 p-2 text-center">CRM-VENDOR</div>
+    <a href="">
+    <div class="w-full bg-gray-200 p-2 text-center"><a href="dashboard">CRM-VENDOR</div></a>
     <div class="flex flex-col p-2 gap-2">
         <!-- Users Menu -->
         <div class="w-full">
@@ -243,3 +244,6 @@
         </div>
     </div>
 </div>
+
+
+</script>
