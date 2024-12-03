@@ -1,36 +1,42 @@
 <div>
     <!-- Filter Section -->
+   <!-- Filter Section -->
 <div class="bg-white rounded-lg shadow p-4 mb-6">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-            <label class="block text-sm font-medium text-gray-700">Date Range</label>
-            <select wire:model="dateRange" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option value="today">Today</option>
-                <option value="this_week">This Week</option>
-                <option value="this_month">This Month</option>
-                <option value="this_year">This Year</option>
-            </select>
+            <label for="startDate" class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+            <input 
+                type="date" 
+                id="startDate"
+                wire:model.live="startDate" 
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+            >
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700">Vendor</label>
-            <select wire:model="selectedVendor" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            <label for="endDate" class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+            <input 
+                type="date" 
+                id="endDate"
+                wire:model.live="endDate" 
+                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+            >
+        </div>
+        <div>
+            <label for="vendor" class="block text-sm font-medium text-gray-700 mb-2">Vendor</label>
+            <select wire:model.live="selectedVendor" class="w-full rounded-md border-gray-300">
                 <option value="">All Vendors</option>
-                @foreach($vendors as $vendor)
-                    <option value="{{ $vendor->id }}">{{ $vendor->vendor_name }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Customer</label>
-            <select wire:model="selectedCustomer" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                <option value="">All Customers</option>
-                @foreach($customers as $customer)
-                    <option value="{{ $customer->id }}">{{ $customer->customer_name }}</option>
+                @foreach($vendors as $vendorName)
+                    <option value="{{ $vendorName }}">{{ $vendorName }}</option>
                 @endforeach
             </select>
         </div>
     </div>
-</div>
+
+    <!-- Optional: Loading indicator -->
+    <div wire:loading class="mt-4 text-sm text-gray-500">
+        Loading...
+    </div>
+</div> 
     <!-- Stats Overview -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <!-- Projects Card -->
@@ -179,33 +185,69 @@
                 datasets: [{
                     label: 'Projects',
                     data: @json($projectData),
-                    backgroundColor: '#3B82F6'
+                    backgroundColor: '#3B82F6',
+                    borderWidth: 1
                 }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Project Distribution'
+                    }
+                }
             }
         });
 
         const revenueChart = new Chart(document.getElementById('revenueChart'), {
             type: 'line',
             data: {
-                labels: @json($revenueLabels), 
+                labels: @json($revenueLabels),
                 datasets: [{
                     label: 'Revenue',
                     data: @json($revenueData),
-                    borderColor: '#10B981'
+                    borderColor: '#10B981',
+                    tension: 0.1,
+                    fill: false
                 }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Revenue Trend'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
             }
+        });
+
+        Livewire.on('refreshCharts', () => {
+            projectChart.data.labels = @json($projectLabels);
+            projectChart.data.datasets[0].data = @json($projectData);
+            projectChart.update();
+
+            revenueChart.data.labels = @json($revenueLabels);
+            revenueChart.data.datasets[0].data = @json($revenueData);
+            revenueChart.update();
         });
     });
 </script>
 @endpush
-@push('scripts')
-<script>
-    Livewire.on('refreshCharts', () => {
-        // Refresh charts dengan data baru
-        projectChart.update();
-        revenueChart.update();
-    });
-</script>
-@endpush
-</div>
-

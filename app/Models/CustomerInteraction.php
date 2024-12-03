@@ -6,23 +6,30 @@ use Illuminate\Database\Eloquent\Model;
 
 class CustomerInteraction extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'customer_id',
+        'user_id',
+        'vendor_id',
+        'interaction_type',
+        'interaction_date',
+        'notes'
+    ];
 
-    // Relasi ke Customer (many-to-one)
-    public function customers()
+    // Relasi ke Customer
+    public function customer()
     {
-        return $this->belongsTo(Customer::class, 'customer_id');
+        return $this->belongsTo(Customer::class);
     }
 
-    // Relasi ke User (many-to-one)
-    public function users()
+    // Relasi ke Vendor
+    public function vendor()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Vendor::class, 'vendor_id', 'vendor_id');
     }
 
-    // Relasi ke Vendor (many-to-one)
-    public function vendors()
+    // Relasi ke User
+    public function user()
     {
-        return $this->belongsTo(Vendor::class, 'vendor_id');
+        return $this->belongsTo(User::class);
     }
 }
