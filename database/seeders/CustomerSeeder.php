@@ -2,16 +2,24 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\Customer;
+use App\Models\User;
 
 class CustomerSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
+    public function run()
     {
-        //
+        $customerUsers = User::where('role', 'Customers')->get();
+
+        foreach($customerUsers as $user) {
+            Customer::create([
+                'user_id' => $user->id,
+                'customer_name' => fake()->company(),
+                'customer_email' => $user->email,
+                'customer_phone' => fake()->phoneNumber(),
+                'customer_address' => fake()->address(),
+            ]);
+        }
     }
 }

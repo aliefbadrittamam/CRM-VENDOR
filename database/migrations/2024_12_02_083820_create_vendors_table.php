@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id('vendor_id');
             $table->foreignId('user_id')->constrained('users', 'id');
             $table->string('vendor_name', 100);
-            $table->string('vendor_phone', 15);
+            $table->string('vendor_phone', 30);
             $table->string('vendor_email', 100);
             $table->text('vendor_address');
             $table->timestamps();

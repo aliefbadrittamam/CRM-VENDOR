@@ -2,16 +2,34 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\Shipping;
+use App\Models\PurchaseDetail;
+use App\Models\Project;
+use App\Models\Vendor;
+use App\Models\Customer;
+
 class ShippingTableSeeder extends Seeder
 {
-    public function run()  
+    public function run()
     {
-        DB::table('shipping')->insert([
-            ['purchase_detail_id' => 1, 'project_id' => 1, 'vendor_id' => 1, 'customer_id' => 1, 'shipping_status' => 'Pending', 'Number_receipt' => 12345],
-            ['purchase_detail_id' => 2, 'project_id' => 2, 'vendor_id' => 2, 'customer_id' => 2, 'shipping_status' => 'Completed', 'Number_receipt' => 67890],
-        ]); 
+        $purchaseDetails = PurchaseDetail::all();
+        $projects = Project::all();
+        $vendors = Vendor::all();
+        $customers = Customer::all();
+        $statuses = ['Pending', 'Completed', 'Cancelled'];
+
+        foreach($purchaseDetails as $detail) {
+            if(rand(0, 1)) { // 50% chance to create shipping
+                Shipping::create([
+                    'purchase_detail_id' => $detail->id,
+                    'project_id' => $projects->random()->id,
+                    'vendor_id' => $vendors->random()->id,
+                    'customer_id' => $customers->random()->id,
+                    'shipping_status' => fake()->randomElement($statuses),
+                    'Number_receipt' => fake()->numberBetween(1000, 9999)
+                ]);
+            }
+        }
     }
 }

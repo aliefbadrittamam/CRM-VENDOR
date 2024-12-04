@@ -3,43 +3,42 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Faker\Factory as Faker;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class UsersTableSeeder extends Seeder
 {
     public function run()
     {
-        $faker = Faker::create(); // Membuat instance Faker
+        // Create admin user
+        User::create([
+            'name' => 'Admin',
+            'email' => 'admin@admin.com',
+            'password' => Hash::make('password'),
+            'role' => 'Admin',
+            'status' => 'Active',
+        ]);
 
-        DB::table('users')->insert([
-            [
-                'name' => $faker->name, // Nama acak
-                'email' => $faker->unique()->safeEmail, // Email acak yang aman dan unik
-                'password' => bcrypt('password'), // Pastikan password di-hash
-                'role' => 'Admin',
-                'status' => 'Active',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => $faker->name, // Nama acak
-                'email' => $faker->unique()->safeEmail, // Email acak yang aman dan unik
-                'password' => bcrypt('customer'),
-                'role' => 'Customers',
-                'status' => 'Active',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => $faker->name, // Nama acak
-                'email' => $faker->unique()->safeEmail, // Email acak yang aman dan unik
-                'password' => bcrypt('vendor'),
+        // Create vendor users
+        for($i = 0; $i < 5; $i++) {
+            User::create([
+                'name' => fake()->name,
+                'email' => fake()->unique()->safeEmail,
+                'password' => Hash::make('password'),
                 'role' => 'Vendor',
                 'status' => 'Active',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
+            ]);
+        }
+
+        // Create customer users
+        for($i = 0; $i < 5; $i++) {
+            User::create([
+                'name' => fake()->name,
+                'email' => fake()->unique()->safeEmail,
+                'password' => Hash::make('password'),
+                'role' => 'Customers',
+                'status' => 'Active',
+            ]);
+        }
     }
 }

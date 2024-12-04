@@ -2,40 +2,49 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Faker\Factory as Faker;
+use App\Models\Project;
+use App\Models\Vendor;
+use App\Models\Customer;
+use App\Models\Product;
+
 class ProjectsTableSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run()
     {
-        $faker = Faker::create(); // Membuat instance Faker
+        // Cek apakah ada data di tabel terkait
+        if(Vendor::count() == 0) {
+            echo "No vendors found. Please run VendorsTableSeeder first.\n";
+            return;
+        }
 
-        DB::table('projects')->insert([
-            [
-                'vendor_id' => 6, // Mengacu pada tabel `vendors`
-                'customer_id' => 1, // Mengacu pada tabel `customers`
-                'product_id' => 1, // Mengacu pada tabel `products`
-                'project_header' => $faker->word, // Menghasilkan judul proyek acak
-                'project_value' => $faker->numberBetween(1000000, 5000000), // Nilai proyek acak
-                'project_duration_start' => $faker->dateTimeThisYear, // Tanggal mulai acak dalam tahun ini
-                'project_duration_end' => $faker->dateTimeThisYear->modify('+3 months'), // Tanggal akhir 3 bulan setelah start date
-                'project_detail' => $faker->text(200), // Deskripsi proyek acak
-            ],
-            [
-                'vendor_id' => 4, // Mengacu pada tabel `vendors`
-                'customer_id' => 2, // Mengacu pada tabel `customers`
-                'product_id' => 2, // Mengacu pada tabel `products`
-                'project_header' => $faker->word, // Menghasilkan judul proyek acak
-                'project_value' => $faker->numberBetween(2000000, 6000000), // Nilai proyek acak
-                'project_duration_start' => $faker->dateTimeThisYear, // Tanggal mulai acak dalam tahun ini
-                'project_duration_end' => $faker->dateTimeThisYear->modify('+6 months'), // Tanggal akhir 6 bulan setelah start date
-                'project_detail' => $faker->text(200), // Deskripsi proyek acak
-            ],
-        ]);
+        if(Customer::count() == 0) {
+            echo "No customers found. Please run CustomersTableSeeder first.\n";
+            return;
+        }
+
+        if(Product::count() == 0) {
+            echo "No products found. Please run ProductsTableSeeder first.\n";
+            return;
+        }
+
+        $vendors = Vendor::all();
+        $customers = Customer::all();
+        $products = Product::all();
+
+        // Create projects
+        for($i = 0; $i < 15; $i++) {
+            Project::create([
+               'vendor_id' => $vendors->whereBetween('id', [1, 10])->random()->id,
+
+                'customer_id' => $customers->random()->id,
+                'product_id' => $products->random()->id,
+                'project_header' => "Project " . fake()->word(),
+                'project_value' => fake()->numberBetween(10000000, 100000000),
+                'project_duration_start' => fake()->dateTimeBetween('-3 months', 'now'),
+                'project_duration_end' => fake()->dateTimeBetween('now', '+6 months'),
+                'project_detail' => fake()->paragraph()
+            ]);
+        }
     }
 }
