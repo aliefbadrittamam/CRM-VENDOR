@@ -212,15 +212,13 @@
        </div>
    </div>
 </div>
-  <!-- Charts Section -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-    <!-- Project Timeline -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold mb-4">Project Timeline</h3>
-        <div class="h-[400px]" wire:ignore>
-            <div id="timelineChart"></div>
-        </div>
+  <!-- Project Time Line Charts  -->
+  <div class="bg-white rounded-lg shadow p-6">
+    <h3 class="text-lg font-semibold mb-4">Project Timeline</h3>
+    <div class="h-[400px]" wire:ignore>
+        <div id="timelineChart"></div>
     </div>
+</div>
 
     <!-- Revenue Overview -->
     <div class="bg-white rounded-lg shadow p-6">
@@ -234,53 +232,53 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
-document.addEventListener('livewire:load', function() {
-    // Project Timeline Chart
+ddocument.addEventListener('livewire:load', function() {
     const timelineOptions = {
         series: [{
             data: @json($chartData['timelineData'])
         }],
         chart: {
             height: 350,
-            type: 'rangeBar'
+            type: 'rangeBar',
+            toolbar: {
+                show: false
+            }
         },
         plotOptions: {
             bar: {
-                horizontal: true
+                horizontal: true,
+                barHeight: '80%',
+                rangeBarGroupRows: true
             }
         },
         xaxis: {
-            type: 'datetime'
+            type: 'datetime',
+            labels: {
+                format: 'dd MMM yyyy'
+            }
+        },
+        tooltip: {
+            custom: function({series, seriesIndex, dataPointIndex, w}) {
+                const project = w.config.series[seriesIndex].data[dataPointIndex];
+                return `
+                    <div class="px-3 py-2">
+                        <div class="font-medium">${project.x}</div>
+                        <div class="text-sm">
+                            Start: ${new Date(project.y[0]).toLocaleDateString()}<br>
+                            End: ${new Date(project.y[1]).toLocaleDateString()}
+                        </div>
+                    </div>`;
+            }
         }
     };
 
     const timelineChart = new ApexCharts(document.getElementById("timelineChart"), timelineOptions);
     timelineChart.render();
 
-    // Revenue Chart
-    const revenueChart = new Chart(document.getElementById('revenueChart').getContext('2d'), {
-        type: 'line',
-        data: {
-            labels: @json($chartData['revenueLabels']),
-            datasets: [{
-                label: 'Revenue',
-                data: @json($chartData['revenueData']),
-                borderColor: '#10B981',
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
-
-    // Handle refresh events
-    Livewire.on('refreshCharts', () => {
+    Livewire.on('refreshCharts', (data) => {
         timelineChart.updateSeries([{
-            data: @json($chartData['timelineData'])
+            data: data.timelineData
         }]);
-        revenueChart.update();
     });
 });
 </script>

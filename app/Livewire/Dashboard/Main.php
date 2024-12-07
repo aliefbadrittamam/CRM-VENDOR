@@ -60,30 +60,10 @@ class Main extends Component
     }
 
     return $query->select('projects.*'); 
-}    public function render()
-{
-    $filteredQuery = $this->getFilteredData();
-    $chartData = $this->getChartData();
 
-    return view('livewire.dashboard.main', [
-        'totalProjects' => $filteredQuery->count(),
-        'totalVendors' => Vendor::count(),
-        'revenue' => $filteredQuery->sum('project_value'),
-        'pendingProjects' => Project::whereDate('project_duration_start', '>', now())->count(),
-        'recentProjects' => $filteredQuery->with(['vendor', 'customer'])
-            ->orderBy('project_duration_start', 'desc')
-            ->limit(5)
-            ->get(),
-        'recentInteractions' => CustomerInteraction::with(['customer'])
-            ->orderBy('interaction_date', 'desc')
-            ->take(5)
-            ->get(),
-        'vendors' => Vendor::pluck('vendor_name'),
-        'chartData' => $chartData  // Passing chartData sebagai satu variabel
-    ]);
+
 }
- 
-    public function getChartData()
+  public function getChartData()
 {
     $query = Project::query()
         ->join('vendors', 'projects.vendor_id', '=', 'vendors.vendor_id')
@@ -133,4 +113,28 @@ class Main extends Component
         'timelineData' => $timelineData
     ];
 }
+public function render()
+{
+    $filteredQuery = $this->getFilteredData();
+    $chartData = $this->getChartData();
+
+    return view('livewire.dashboard.main', [
+        'totalProjects' => $filteredQuery->count(),
+        'totalVendors' => Vendor::count(),
+        'revenue' => $filteredQuery->sum('project_value'),
+        'pendingProjects' => Project::whereDate('project_duration_start', '>', now())->count(),
+        'recentProjects' => $filteredQuery->with(['vendor', 'customer'])
+            ->orderBy('project_duration_start', 'desc')
+            ->limit(5)
+            ->get(),
+        'recentInteractions' => CustomerInteraction::with(['customer'])
+            ->orderBy('interaction_date', 'desc')
+            ->take(5)
+            ->get(),
+        'vendors' => Vendor::pluck('vendor_name'),
+        'chartData' => $chartData  // Passing chartData sebagai satu variabel
+    ]);
+}
+ 
+  
 }

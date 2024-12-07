@@ -35,10 +35,10 @@ Route::middleware([
 
    // Customers
    Route::prefix('customers')->group(function () {
-       Route::get('/', [CustomerController::class, 'index'])->name('customers.index');
-       Route::get('/interaction', [CustomerController::class, 'interaction'])->name('customers.interaction');
-       Route::get('/segmentation', [CustomerController::class, 'segmentation'])->name('customers.segmentation');
-   });
+    Route::get('/', [CustomerController::class, 'index'])->name('customers.index');
+    Route::get('/interaction', [CustomerController::class, 'interaction'])->name('customers.interaction');
+    Route::get('/segmentation', [CustomerController::class, 'segmentation'])->name('customers.segmentation');
+});
 
    // Sales
    Route::prefix('sales')->group(function () {

@@ -18,6 +18,7 @@ class CustomerController extends Controller
     {
         return view('customers.interaction');
     }
+
     public function segmentation()
     {
         return view('customers.segmentation');

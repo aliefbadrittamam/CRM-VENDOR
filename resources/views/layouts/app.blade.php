@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
+    {{-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -18,6 +19,9 @@
     @livewireStyles
 </head>
 <body class="font-sans antialiased">
+    <livewire:notification />
+    @livewire('livewire-ui-modal')
+    @livewireScripts
     <x-banner />
 
     <div class="h-screen flex overflow-hidden" x-data="{ sidebar: true, mobile: false }">
@@ -114,5 +118,6 @@
 
     @stack('modals')
     @livewireScripts
+
 </body>
 </html>
