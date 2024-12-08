@@ -21,6 +21,8 @@ Route::middleware([
    config('jetstream.auth_session'),
    'verified',
 ])->group(function () {
+
+   
    // Dashboard
    Route::get('/dashboard', function () {
        return view('dashboard');

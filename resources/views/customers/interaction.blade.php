@@ -1,14 +1,16 @@
-// resources/views/customers/interaction.blade.php
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Customer Interaction') }}
+            {{ __('Customer Interactions') }}
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <livewire:customer.interaction />
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+                
+                <livewire:customer.interaction />
+            </div>
         </div>
     </div>
 </x-app-layout>
