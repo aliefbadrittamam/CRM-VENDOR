@@ -124,3 +124,11 @@
         {{ $customers->links() }}
     </div>
 </div>
+
+<script>
+    window.addEventListener('setTimeout', event => {
+        setTimeout(() => {
+            Livewire.dispatch(event.detail.callback, event.detail.message);
+        }, event.detail.delay);
+    });
+</script>

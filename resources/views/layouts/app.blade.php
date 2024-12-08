@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    {{-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> --}}
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
     <title>{{ config('app.name', 'Laravel') }}</title>
 
     <!-- Fonts -->
@@ -118,6 +122,49 @@
 
     @stack('modals')
     @livewireScripts
-
+    <script>
+        // Listener untuk event showAlert
+        window.addEventListener('showAlert', event => {
+            Swal.fire({
+                title: event.detail.title,
+                text: event.detail.message,
+                icon: event.detail.icon,
+                showConfirmButton: false,
+                timerProgressBar: true,
+                timer: 3000,
+                toast: true,
+                position: 'top-end',
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer)
+                    toast.addEventListener('mouseleave', Swal.resumeTimer)
+                }
+            });
+        });
+    
+        // Listener untuk konfirmasi sebelum save
+        window.addEventListener('confirmSave', event => {
+            Swal.fire({
+                title: 'Confirm Customer Details',
+                html: `
+                    <div class="text-left">
+                        <p><strong>Name:</strong> ${event.detail.name}</p>
+                        <p><strong>Email:</strong> ${event.detail.email}</p>
+                        <p><strong>Phone:</strong> ${event.detail.phone}</p>
+                        <p><strong>Address:</strong> ${event.detail.address}</p>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Save',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Livewire.dispatch('confirmed');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

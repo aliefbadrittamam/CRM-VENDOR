@@ -1,5 +1,4 @@
 <?php
-// app/Livewire/Customer/Main.php
 namespace App\Livewire\Customer;
 
 use App\Models\Customer;
@@ -23,27 +22,48 @@ class Main extends Component
         'message' => ''
     ];
 
+    // Mendefinisikan listeners untuk event
     protected $listeners = [
+        'closeModal' => 'handleCloseModal',
         'customerSaved' => 'handleCustomerSaved'
     ];
 
+    // Membuka modal dan mengatur ID customer jika dalam mode edit
     public function openModal($customerId = null)
     {
         $this->editingCustomerId = $customerId;
         $this->showModal = true;
     }
 
+    // Menutup modal dan membersihkan state
     public function handleCloseModal()
     {
         $this->showModal = false;
         $this->editingCustomerId = null;
+        $this->dispatch('modalClosed');
     }
 
+    // Menangani event setelah customer disimpan
     public function handleCustomerSaved($message)
     {
         $this->handleCloseModal();
         $this->notification['show'] = true;
         $this->notification['message'] = $message;
+        
+        // Refresh data
+        $this->resetPage();
+    }
+
+    // Reset halaman saat pencarian berubah
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    // Reset halaman saat filter berubah
+    public function updatingFilters()
+    {
+        $this->resetPage();
     }
 
     public function render()
