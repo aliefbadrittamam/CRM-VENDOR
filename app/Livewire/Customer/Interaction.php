@@ -7,78 +7,41 @@ use Livewire\WithPagination;
 use App\Models\Customer;
 use App\Models\CustomerInteraction;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+
 class Interaction extends Component
 {
     use WithPagination;
 
-    // Properties untuk data form
+    // Property dasar yang dibutuhkan
     public $selectedCustomerId = null;
     public $selectedCustomerName = null;
     public $showModal = false;
     public $interaction_type = '';
     public $notes = '';
     public $editingInteractionId = null;
-    public $search = '';
-    public $filters = [
-        'date_from' => '',
-        'date_to' => '',
-        'type' => ''
-    ];
 
-    // Aturan validasi
-    protected $rules = [
-        'interaction_type' => 'required|in:Call,Email,Meeting,Other',
-        'notes' => 'required|min:10'
-    ];
-
-    // Proses inisialisasi komponen
-    public function mount()
+    // Aturan validasi dasar
+    protected function rules()
     {
-        // Jika ada customer ID di parameter URL, otomatis pilih customer tersebut
-        if (request()->has('customerId')) {
-            $this->selectCustomer(request()->get('customerId'));
-        }
+        return [
+            'interaction_type' => 'required',
+            'notes' => 'required'
+        ];
     }
 
-    // Memilih customer untuk ditampilkan interaksinya
+    // Method untuk memilih customer
     public function selectCustomer($customerId)
     {
         $customer = Customer::find($customerId);
         if ($customer) {
             $this->selectedCustomerId = $customer->customer_id;
             $this->selectedCustomerName = $customer->customer_name;
-            $this->resetPage(); // Reset pagination ketika ganti customer
-            $this->resetFilters(); // Reset filter ketika ganti customer
         }
     }
 
-    // Reset filter ke nilai default
-    public function resetFilters()
-    {
-        $this->filters = [
-            'date_from' => '',
-            'date_to' => '',
-            'type' => ''
-        ];
-    }
-
-    // Membuka modal tambah/edit interaksi
+    // Method untuk membuka modal
     public function openModal($interactionId = null)
     {
-        // Validasi apakah customer sudah dipilih
-        if (!$this->selectedCustomerId) {
-            $this->dispatch('showAlert', [
-                'title' => 'Error!',
-                'message' => 'Please select a customer first',
-                'icon' => 'error',
-                'timer' => 3000,
-            ]);
-            return;
-        }
-
-        // Jika mode edit, ambil data yang akan diedit
         if ($interactionId) {
             $interaction = CustomerInteraction::find($interactionId);
             if ($interaction) {
@@ -87,143 +50,78 @@ class Interaction extends Component
                 $this->notes = $interaction->notes;
             }
         }
-
         $this->showModal = true;
     }
 
-    // Menutup modal dan reset form
+    // Method untuk menutup modal
     public function closeModal()
-{
-    $this->showModal = false;
-    $this->reset(['interaction_type', 'notes', 'editingInteractionId']);
-    $this->dispatch('modalClosed');
-}
+    {
+        $this->showModal = false;
+        $this->resetExcept(['selectedCustomerId', 'selectedCustomerName']);
+    }
 
-    // Menyimpan data interaksi (create/update)
+    // Method untuk menyimpan data
     public function save()
     {
-        if (!$this->selectedCustomerId) {
-            $this->dispatch('showAlert', [
-                'title' => 'Error!',
-                'message' => 'Please select a customer first',
-                'icon' => 'error',
-                'timer' => 3000,
-            ]);
-            return;
-        }
-
-        $validatedData = $this->validate();
+        $this->validate();
 
         try {
-            DB::beginTransaction(); // Sekarang DB bisa digunakan karena sudah diimpor
-
             if ($this->editingInteractionId) {
-                $interaction = CustomerInteraction::findOrFail($this->editingInteractionId);
-                $interaction->update([
-                    'interaction_type' => $this->interaction_type,
-                    'notes' => $this->notes,
-                ]);
-                $message = 'Interaction updated successfully';
+                // Update existing record
+                $interaction = CustomerInteraction::find($this->editingInteractionId);
+                if ($interaction) {
+                    $interaction->update([
+                        'interaction_type' => $this->interaction_type,
+                        'notes' => $this->notes
+                    ]);
+                }
             } else {
+                // Create new record
                 CustomerInteraction::create([
                     'customer_id' => $this->selectedCustomerId,
                     'user_id' => Auth::id(),
                     'interaction_type' => $this->interaction_type,
                     'interaction_date' => now(),
-                    'notes' => $this->notes,
+                    'notes' => $this->notes
                 ]);
-                $message = 'New interaction recorded successfully';
             }
 
-            DB::commit();
-            
             // Reset form dan tutup modal
-            $this->reset(['interaction_type', 'notes', 'editingInteractionId']);
             $this->showModal = false;
-            
-            $this->dispatch('showAlert', [
-                'title' => 'Success!',
-                'message' => $message,
-                'icon' => 'success',
-                'timer' => 2000,
-            ]);
+            $this->interaction_type = '';
+            $this->notes = '';
+            $this->editingInteractionId = null;
 
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Customer Interaction Error:', [
-                'message' => $e->getMessage(),
-                'customer_id' => $this->selectedCustomerId,
-                'user_id' => Auth::id()
-            ]);
-            
-            $this->dispatch('showAlert', [
-                'title' => 'Error!',
-                'message' => 'Something went wrong: ' . $e->getMessage(),
-                'icon' => 'error',
-                'timer' => 3000,
-            ]);
+            // Log error jika terjadi masalah
+            logger()->error($e->getMessage());
         }
     }
 
-
-
-    // Menghapus interaksi
-    public function deleteInteraction($interactionId)
+    // Method untuk menghapus interaksi
+    public function deleteInteraction($id)
     {
-        try {
-            $interaction = CustomerInteraction::findOrFail($interactionId);
+        $interaction = CustomerInteraction::find($id);
+        if ($interaction) {
             $interaction->delete();
-
-            // Tampilkan notifikasi sukses
-            $this->dispatch('showAlert', [
-                'title' => 'Success!',
-                'message' => 'Interaction deleted successfully',
-                'icon' => 'success',
-                'timer' => 2000,
-            ]);
-        } catch (\Exception $e) {
-            // Tampilkan notifikasi error
-            $this->dispatch('showAlert', [
-                'title' => 'Error!',
-                'message' => 'Something went wrong: ' . $e->getMessage(),
-                'icon' => 'error',
-                'timer' => 3000,
-            ]);
         }
     }
 
-    // Render view dengan data yang diperlukan
+    // Method render untuk menampilkan data
     public function render()
     {
-        // Ambil daftar customer untuk dropdown selection
-        $customers = Customer::when($this->search, function($query) {
-            $query->where('customer_name', 'like', '%' . $this->search . '%')
-                  ->orWhere('customer_email', 'like', '%' . $this->search . '%');
-        })->orderBy('customer_name')->get();
-
-        // Ambil daftar interaksi hanya jika ada customer yang dipilih
-        $interactions = $this->selectedCustomerId 
-            ? CustomerInteraction::with('user')
-                ->where('customer_id', $this->selectedCustomerId)
-                ->when($this->filters['date_from'], function ($query) {
-                    $query->whereDate('interaction_date', '>=', $this->filters['date_from']);
-                })
-                ->when($this->filters['date_to'], function ($query) {
-                    $query->whereDate('interaction_date', '<=', $this->filters['date_to']);
-                })
-                ->when($this->filters['type'], function ($query) {
-                    $query->where('interaction_type', $this->filters['type']);
-                })
+        $customers = Customer::orderBy('customer_name')->get();
+        
+        $interactions = [];
+        if ($this->selectedCustomerId) {
+            $interactions = CustomerInteraction::where('customer_id', $this->selectedCustomerId)
                 ->orderBy('interaction_date', 'desc')
-                ->paginate(10) 
-            : collect();
+                ->paginate(10);
+        }
 
-        // Return view dengan data yang diperlukan
         return view('livewire.customer.interaction', [
             'customers' => $customers,
-            'interactions' => $interactions,
-            // Kirim selectedCustomerName ke view untuk menampilkan nama customer yang dipilih
-            'customerName' => $this->selectedCustomerName
+            'interactions' => $interactions
         ]);
     }
 }
