@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
@@ -21,6 +23,8 @@
 
     <!-- Styles -->
     @livewireStyles
+    <!-- Add this right before </head> -->
+<script src="{{ asset('js/sidebar.js') }}" defer></script>
 </head>
 <body class="font-sans antialiased">
     <livewire:notification />
@@ -166,5 +170,6 @@
             });
         });
     </script>
+
 </body>
 </html>

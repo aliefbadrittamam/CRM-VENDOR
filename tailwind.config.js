@@ -1,14 +1,19 @@
 module.exports = {
-    darkMode: 'class', // atau 'media' jika ingin otomatis berdasarkan browser
+    darkMode: 'class',
     content: [
-        './resources/**/*.blade.php', // Sesuaikan dengan struktur proyek Laravel Anda
+        './resources/**/*.blade.php',
         './resources/**/*.js',
-        './node_modules/flowbite/**/*.js' // Tambahkan ini untuk Flowbite
+        './node_modules/flowbite/**/*.js'
     ],
     theme: {
-        extend: {},
+        extend: {
+            transitionProperty: {
+                'width': 'width',
+                'spacing': 'margin, padding',
+            }
+        },
     },
     plugins: [
-        require('flowbite/plugin') // Daftarkan plugin Flowbite
+        require('flowbite/plugin')
     ],
 };
