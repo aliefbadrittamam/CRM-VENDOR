@@ -65,7 +65,17 @@ class Main extends Component
     {
         $this->resetPage();
     }
+    public function deleteCustomer($customerId)
+    {
+        $customer = Customer::findOrFail($customerId);
+        $customer->delete();
 
+        $this->notification['show'] = true;
+        $this->notification['message'] = 'Customer deleted successfully.';
+
+        // Refresh data
+        $this->resetPage();
+    }
     public function render()
     {
         $customers = Customer::query()

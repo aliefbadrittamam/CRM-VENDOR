@@ -11,12 +11,12 @@ class ProductsTableSeeder extends Seeder
     {
         $categories = ['Material', 'Tools', 'Equipment', 'Services'];
 
-        for($i = 0; $i < 20; $i++) {
+        for ($i = 0; $i < 20; $i++) {
             Product::create([
-                'product_name' => fake()->word,
+                'product_name' => fake()->word(),
                 'product_category' => fake()->randomElement($categories),
-                'product_price' => fake()->numberBetween(100000, 5000000),
-                'description' => fake()->sentence,
+                'product_price' => fake()->randomFloat(2, 100000, 5000000),
+                'description' => fake()->sentence(),
             ]);
         }
     }
