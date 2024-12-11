@@ -15,46 +15,82 @@ class ShippingStatus extends Component
 {
     use WithPagination;
 
-    // Properties untuk form
     public $purchase_detail_id;
     public $project_id;
     public $vendor_id;
     public $customer_id;
     public $shipping_status = 'Pending';
     public $number_receipt;
-
-    // Properties untuk state
     public $showModal = false;
     public $editMode = false;
     public $shipping_id;
-
-    // Properties untuk filter
     public $search = '';
     public $statusFilter = '';
     public $projectFilter = '';
     public $vendorFilter = '';
 
-    protected function rules()
+    protected $rules = [
+        'purchase_detail_id' => 'required|exists:purchase_details,purchase_detail_id',
+        'project_id' => 'required|exists:projects,project_id',
+        'vendor_id' => 'required|exists:vendors,vendor_id',
+        'customer_id' => 'required|exists:customers,customer_id',
+        'shipping_status' => 'required|in:Pending,Completed,Cancelled',
+        'number_receipt' => 'required|integer'
+    ];
+
+    protected $messages = [
+        'purchase_detail_id.required' => 'Purchase detail is required',
+        'project_id.required' => 'Project is required',
+        'vendor_id.required' => 'Vendor is required',
+        'customer_id.required' => 'Customer is required',
+        'number_receipt.required' => 'Receipt number is required',
+        'number_receipt.integer' => 'Receipt number must be a number'
+    ];
+
+    public function mount()
     {
-        return [
-            'purchase_detail_id' => 'required|exists:purchase_details,purchase_detail_id',
-            'project_id' => 'required|exists:projects,project_id',
-            'vendor_id' => 'required|exists:vendors,vendor_id',
-            'customer_id' => 'required|exists:customers,customer_id',
-            'shipping_status' => 'required|in:Pending,Completed,Cancelled',
-            'number_receipt' => 'required|integer'
-        ];
+        $this->shipping_status = 'Pending';
     }
 
-    public function create()
+    public function updatingSearch()
     {
-        $this->resetForm();
+        $this->resetPage();
+    }
+
+    public function updatingStatusFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingProjectFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingVendorFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function openModal()
+    {
+        $this->resetValidation();
+        $this->resetExcept(['search', 'statusFilter', 'projectFilter', 'vendorFilter']);
         $this->showModal = true;
+        $this->shipping_status = 'Pending';
+    }
+
+    public function closeModal()
+    {
+        $this->showModal = false;
+        $this->resetValidation();
+        $this->resetExcept(['search', 'statusFilter', 'projectFilter', 'vendorFilter']);
     }
 
     public function edit($id)
     {
-        $this->resetForm();
+        $this->resetValidation();
+        $this->resetExcept(['search', 'statusFilter', 'projectFilter', 'vendorFilter']);
         $this->editMode = true;
         $this->shipping_id = $id;
 
@@ -74,10 +110,13 @@ class ShippingStatus extends Component
     {
         try {
             $shipping = Shipping::findOrFail($id);
-            $shipping->update(['shipping_status' => $newStatus]);
+            $shipping->update([
+                'shipping_status' => $newStatus
+            ]);
             
             $this->dispatch('shipping-updated', 'Shipping status updated successfully!');
         } catch (\Exception $e) {
+            logger('Error updating shipping status: '. $e->getMessage());
             session()->flash('error', 'Error updating status: ' . $e->getMessage());
         }
     }
@@ -110,12 +149,13 @@ class ShippingStatus extends Component
             DB::commit();
 
             $this->showModal = false;
-            $this->resetForm();
+            $this->resetExcept(['search', 'statusFilter', 'projectFilter', 'vendorFilter']);
             
             $this->dispatch('shipping-saved', $message);
 
         } catch (\Exception $e) {
             DB::rollBack();
+            logger('Error saving shipping: '. $e->getMessage());
             session()->flash('error', 'Error saving shipping: ' . $e->getMessage());
         }
     }
@@ -123,37 +163,31 @@ class ShippingStatus extends Component
     public function delete($id)
     {
         try {
+            DB::beginTransaction();
+
             $shipping = Shipping::findOrFail($id);
             $shipping->delete();
+
+            DB::commit();
             
             $this->dispatch('shipping-deleted', 'Shipping deleted successfully!');
         } catch (\Exception $e) {
+            DB::rollBack();
+            logger('Error deleting shipping: '. $e->getMessage());
             session()->flash('error', 'Error deleting shipping: ' . $e->getMessage());
         }
-    }
-
-    private function resetForm()
-    {
-        $this->reset([
-            'purchase_detail_id',
-            'project_id',
-            'vendor_id',
-            'customer_id',
-            'shipping_status',
-            'number_receipt',
-            'editMode',
-            'shipping_id'
-        ]);
     }
 
     public function render()
     {
         $query = Shipping::with(['purchaseDetail', 'project', 'vendor', 'customer'])
             ->when($this->search, function($q) {
-                $q->whereHas('customer', function($query) {
-                    $query->where('customer_name', 'like', '%' . $this->search . '%');
-                })->orWhereHas('vendor', function($query) {
-                    $query->where('vendor_name', 'like', '%' . $this->search . '%');
+                $q->where(function($query) {
+                    $query->whereHas('customer', function($q) {
+                        $q->where('customer_name', 'like', '%' . $this->search . '%');
+                    })->orWhereHas('vendor', function($q) {
+                        $q->where('vendor_name', 'like', '%' . $this->search . '%');
+                    });
                 });
             })
             ->when($this->statusFilter, function($q) {

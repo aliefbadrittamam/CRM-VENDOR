@@ -72,10 +72,10 @@ Route::middleware([
     });
 
     // Projects 
-    Route::prefix('projects')->group(function () {
-        Route::get('/', [ProjectController::class, 'index'])->name('projects.index');
-        Route::get('/timeline', [ProjectController::class, 'timeline'])->name('projects.timeline');
-        Route::get('/status', [ProjectController::class, 'status'])->name('projects.status');
+    Route::prefix('projects')->name('projects.')->group(function () {
+        Route::get('/', [ProjectController::class, 'index'])->name('index');
+        Route::get('/timeline', [ProjectController::class, 'timeline'])->name('timeline');
+        Route::get('/status', [ProjectController::class, 'status'])->name('status');
     });
 
     // Reports
