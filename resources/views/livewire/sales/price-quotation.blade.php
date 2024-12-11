@@ -23,32 +23,47 @@
         </button>
     </div>
 
+    
+
     <!-- Filter Section -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div>
-            <input type="text" wire:model.live="search"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Search project or vendor...">
-        </div>
-        <div>
-            <select wire:model.live="projectFilter"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                <option value="">All Projects</option>
-                @foreach ($projects as $project)
-                    <option value="{{ $project->project_id }}">{{ $project->project_header }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div>
-            <select wire:model.live="vendorFilter"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                <option value="">All Vendors</option>
-                @foreach ($vendors as $vendor)
-                    <option value="{{ $vendor->vendor_id }}">{{ $vendor->vendor_name }}</option>
-                @endforeach
-            </select>
-        </div>
+    
+   <!-- Di bagian Filters section price-quotation.blade.php -->
+<div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div>
+        <input type="text" wire:model.live="search" 
+            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Search project or vendor...">
     </div>
+    <div>
+        <select wire:model.live="projectFilter" 
+            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <option value="">All Projects</option>
+            @foreach($projects as $project)
+                <option value="{{ $project->project_id }}">{{ $project->project_header }}</option>
+            @endforeach
+        </select>
+    </div>
+    <div>
+        <select wire:model.live="vendorFilter" 
+            class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <option value="">All Vendors</option>
+            @foreach($vendors as $vendor)
+                <option value="{{ $vendor->vendor_id }}">{{ $vendor->vendor_name }}</option>
+            @endforeach
+        </select>
+    </div>
+    <div>
+        <button wire:click="resetFilters" 
+            class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
+            Reset Filters
+        </button>
+    </div>
+</div>
+
+<!-- Tambahkan indikator loading state -->
+<div wire:loading class="fixed top-0 left-0 right-0">
+    <div class="bg-blue-500 h-1 w-full animate-pulse"></div>
+</div>
 
     <!-- Quotations Table -->
     <div class="bg-white shadow-sm rounded-lg overflow-hidden">

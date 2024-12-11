@@ -13,7 +13,8 @@ class SalesDetail extends Model
         'sale_id',
         'product_id',
         'quantity',
-        'subtotal'
+        'subtotal',
+        'updated_at'
     ];
 
     protected $casts = [

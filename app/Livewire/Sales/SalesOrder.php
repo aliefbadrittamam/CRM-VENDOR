@@ -5,206 +5,224 @@ namespace App\Livewire\Sales;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Sales;
-use App\Models\SalesDetail;
 use App\Models\Customer;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 
 class SalesOrder extends Component
 {
-    use WithPagination;
+   use WithPagination;
 
-    // Properties untuk form
-    public $customer_id;
-    public $sale_date;
-    public $status = 'Pending';
-    public $fixed_amount = 0;
+   public $editMode = false;
+   public $showModal = false;
+   public $customer_id;
+   public $sale_date;
+   public $status = 'Pending'; 
+   public $selectedProducts = [];
+   public $quantities = [];
+   public $fixed_amount = 0;
+   public $search = '';
+   public $statusFilter = '';
+   public $sale_id;
+   public $total = 0;
 
-    // Properties untuk sales detail
-    public $selectedProducts = [];
-    public $quantities = [];
+   protected $rules = [
+       'customer_id' => 'required|exists:customers,customer_id',
+       'sale_date' => 'required|date',
+       'selectedProducts' => 'required|array|min:1',
+       'quantities.*' => 'required|numeric|min:1'
+   ];
 
-    // Properties untuk state
-    public $showModal = false;
-    public $editMode = false;
-    public $sale_id;
-    public $search = '';
-    public $statusFilter = '';
+   public function updatingSearch()
+   {
+       $this->resetPage();
+   }
 
-    protected function rules()
-    {
-        return [
-            'customer_id' => 'required|exists:customers,customer_id',
-            'sale_date' => 'required|date',
-            'status' => 'required|in:Pending,Processing,Completed,Cancelled',
-            'selectedProducts' => 'required|array|min:1',
-            'selectedProducts.*' => 'exists:products,product_id',
-            'quantities.*' => 'required|numeric|min:1'
-        ];
-    }
+   public function updatingStatusFilter()
+   {
+       $this->resetPage();
+   }
 
-    public function mount()
-    {
-        $this->sale_date = date('Y-m-d');
-    }
+   public function mount()
+   {
+       $this->sale_date = date('Y-m-d');
+       $this->status = 'Pending';
+   }
 
-    public function create()
-    {
-        $this->resetForm();
-        $this->showModal = true;
-    }
+   public function openModal()
+   {
+       $this->resetForm();
+       $this->sale_date = date('Y-m-d');
+       $this->status = 'Pending';
+       $this->showModal = true;
+   }
 
-    public function edit($id)
-    {
-        $this->resetForm();
-        $this->editMode = true;
-        $this->sale_id = $id;
+   public function closeModal()
+   {
+       $this->showModal = false;
+       $this->resetForm();
+   }
 
-        $sale = Sales::with('details')->findOrFail($id);
-        
-        $this->customer_id = $sale->customer_id;
-        $this->sale_date = $sale->sale_date;
-        $this->status = $sale->status;
-        $this->fixed_amount = $sale->fixed_amount;
+   public function calculateTotal()
+   {
+       $this->total = 0;
+       $this->fixed_amount = 0;
+       
+       foreach ($this->selectedProducts as $productId) {
+           if (isset($this->quantities[$productId])) {
+               $product = Product::find($productId);
+               if ($product) {
+                   $subtotal = $product->product_price * $this->quantities[$productId];
+                   $this->total += $subtotal;
+                   $this->fixed_amount += $subtotal;
+               }
+           }
+       }
+   }
 
-        foreach ($sale->details as $detail) {
-            $this->selectedProducts[] = $detail->product_id;
-            $this->quantities[$detail->product_id] = $detail->quantity;
-        }
+   public function updatedSelectedProducts($value)
+   {
+       if(!empty($value)) {
+           foreach($this->selectedProducts as $productId) {
+               if(!isset($this->quantities[$productId])) {
+                   $this->quantities[$productId] = 1;
+               }
+           }
+           $this->calculateTotal();
+       }
+   }
 
-        $this->showModal = true;
-    }
+   public function updatedQuantities($value, $key)
+   {
+       $this->calculateTotal();
+   }
 
-    public function updateStatus($id, $newStatus)
-    {
-        try {
-            $sale = Sales::findOrFail($id);
-            $sale->update(['status' => $newStatus]);
-            
-            $this->dispatch('order-updated', 'Order status updated successfully!');
-        } catch (\Exception $e) {
-            session()->flash('error', 'Error updating status: ' . $e->getMessage());
-        }
-    }
+   public function edit($id)
+   {
+       $this->resetForm();
+       $this->editMode = true;
+       $this->sale_id = $id;
 
-    public function calculateTotal()
-    {
-        $total = 0;
+       $sale = Sales::with('details')->find($id);
+       if ($sale) {
+           $this->customer_id = $sale->customer_id;
+           $this->sale_date = $sale->sale_date;
+           $this->status = $sale->status;
+           $this->fixed_amount = $sale->fixed_amount;
+           $this->total = $sale->fixed_amount;
+
+           foreach ($sale->details as $detail) {
+               $this->selectedProducts[] = $detail->product_id;
+               $this->quantities[$detail->product_id] = $detail->quantity;
+           }
+       }
+
+       $this->showModal = true;
+   }
+
+   public function updateStatus($id, $newStatus)
+   {
+       try {
+           $sale = Sales::findOrFail($id);
+           $sale->update(['status' => $newStatus]);
+           
+           $this->dispatch('order-updated', 'Order status updated successfully!');
+       } catch (\Exception $e) {
+           session()->flash('error', 'Error updating status: ' . $e->getMessage());
+       }
+   }
+
+   public function save()
+{
+    $this->validate();
+
+    try {
+        DB::beginTransaction();
+
+        $sale = Sales::create([
+            'customer_id' => $this->customer_id,
+            'fixed_amount' => $this->fixed_amount,
+            'sale_date' => $this->sale_date,
+            'status' => 'Pending'
+        ]);
+
         foreach ($this->selectedProducts as $productId) {
             if (isset($this->quantities[$productId])) {
                 $product = Product::find($productId);
-                $total += $product->product_price * $this->quantities[$productId];
-            }
-        }
-        $this->fixed_amount = $total;
-    }
-
-    public function save()
-    {
-        $this->validate();
-
-        try {
-            DB::beginTransaction();
-
-            $this->calculateTotal();
-
-            if ($this->editMode) {
-                $sale = Sales::findOrFail($this->sale_id);
-                $sale->update([
-                    'customer_id' => $this->customer_id,
-                    'sale_date' => $this->sale_date,
-                    'status' => $this->status,
-                    'fixed_amount' => $this->fixed_amount
-                ]);
-
-                // Delete existing details
-                $sale->details()->delete();
-
-            } else {
-                $sale = Sales::create([
-                    'customer_id' => $this->customer_id,
-                    'sale_date' => $this->sale_date,
-                    'status' => $this->status,
-                    'fixed_amount' => $this->fixed_amount
-                ]);
-            }
-
-            // Create new details
-            foreach ($this->selectedProducts as $productId) {
-                $product = Product::find($productId);
-                $quantity = $this->quantities[$productId] ?? 1;
+                $quantity = $this->quantities[$productId];
                 
                 $sale->details()->create([
                     'product_id' => $productId,
                     'quantity' => $quantity,
-                    'subtotal' => $product->product_price * $quantity
+                    'subtotal' => $product->product_price * $quantity,
+                    'updated_at' => now() // PENTING! Karena ini required di database
                 ]);
             }
-
-            DB::commit();
-            
-            $this->showModal = false;
-            $this->resetForm();
-            
-            $message = $this->editMode ? 'Sales order updated successfully!' : 'Sales order created successfully!';
-            $this->dispatch('order-saved', $message);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            session()->flash('error', 'Error saving order: ' . $e->getMessage());
         }
+
+        DB::commit();
+        
+        $this->showModal = false;
+        $this->dispatch('order-saved', 'Sales order created successfully!');
+        $this->resetForm();
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        logger('Error saving order: ' . $e->getMessage());
+        session()->flash('error', 'Error saving order: ' . $e->getMessage());
     }
+}
 
-    public function delete($id)
-    {
-        try {
-            DB::beginTransaction();
+   public function delete($id)
+   {
+       try {
+           DB::beginTransaction();
 
-            $sale = Sales::findOrFail($id);
-            $sale->details()->delete();
-            $sale->delete();
+           $sale = Sales::findOrFail($id);
+           $sale->details()->delete();
+           $sale->delete();
 
-            DB::commit();
-            
-            $this->dispatch('order-deleted', 'Sales order deleted successfully!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            session()->flash('error', 'Error deleting order: ' . $e->getMessage());
-        }
-    }
+           DB::commit();
+           
+           $this->dispatch('order-deleted', 'Sales order deleted successfully!');
+       } catch (\Exception $e) {
+           DB::rollBack();
+           session()->flash('error', 'Error deleting order: ' . $e->getMessage());
+       }
+   }
 
-    private function resetForm()
-    {
-        $this->reset([
-            'customer_id',
-            'status',
-            'fixed_amount',
-            'selectedProducts',
-            'quantities',
-            'editMode',
-            'sale_id'
-        ]);
-        $this->sale_date = date('Y-m-d');
-    }
+   private function resetForm()
+   {
+       $this->reset([
+           'customer_id',
+           'selectedProducts',
+           'quantities',
+           'fixed_amount',
+           'total',
+           'editMode',
+           'sale_id'
+       ]);
+       $this->sale_date = date('Y-m-d');
+       $this->status = 'Pending';
+   }
 
-    public function render()
-    {
-        $query = Sales::with(['customer', 'details.product'])
-            ->when($this->search, function($q) {
-                $q->whereHas('customer', function($query) {
-                    $query->where('customer_name', 'like', '%' . $this->search . '%')
-                        ->orWhere('customer_email', 'like', '%' . $this->search . '%');
-                });
-            })
-            ->when($this->statusFilter, function($q) {
-                $q->where('status', $this->statusFilter);
-            })
-            ->latest();
+   public function render()
+   {
+       $query = Sales::with(['customer', 'details.product'])
+           ->when($this->search, function($q) {
+               $q->whereHas('customer', function($query) {
+                   $query->where('customer_name', 'like', '%' . $this->search . '%');
+               });
+           })
+           ->when($this->statusFilter, function($q) {
+               $q->where('status', $this->statusFilter);
+           })
+           ->latest();
 
-        return view('livewire.sales.sales-order', [
-            'sales' => $query->paginate(10),
-            'customers' => Customer::all(),
-            'products' => Product::all()
-        ]);
-    }
+       return view('livewire.sales.sales-order', [
+           'sales' => $query->paginate(10),
+           'customers' => Customer::all(),
+           'products' => Product::all()
+       ]);
+   }
 }
