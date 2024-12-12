@@ -12,7 +12,6 @@ class Project extends Model
     protected $fillable = [
         'vendor_id',
         'customer_id',
-        'product_id',
         'project_header',
         'project_value',
         'project_duration_start',
@@ -36,9 +35,12 @@ class Project extends Model
         return $this->belongsTo(Customer::class, 'customer_id', 'customer_id');
     }
 
-    public function product()
+    // Tambahkan relasi many-to-many dengan products
+    public function products()
     {
-        return $this->belongsTo(Product::class, 'product_id', 'product_id');
+        return $this->belongsToMany(Product::class, 'project_product', 'project_id', 'product_id')
+                    ->withPivot(['quantity', 'price_at_time', 'subtotal'])
+                    ->withTimestamps();
     }
 
     public function purchases()

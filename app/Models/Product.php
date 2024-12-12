@@ -10,7 +10,7 @@ class Product extends Model
 
     protected $fillable = [
         'product_name',
-        'product_category',
+        'product_category', 
         'product_price',
         'description'
     ];
@@ -19,8 +19,14 @@ class Product extends Model
         'product_price' => 'decimal:2'
     ];
 
-    // Relationship with SalesDetails
-    public function salesDetails()
+    public function projects()
+    {
+        return $this->belongsToMany(Project::class, 'project_product', 'product_id', 'project_id')
+                    ->withPivot(['quantity', 'price_at_time', 'subtotal'])
+                    ->withTimestamps();
+    }
+
+    public function salesDetails() 
     {
         return $this->hasMany(SalesDetail::class, 'product_id', 'product_id');
     }

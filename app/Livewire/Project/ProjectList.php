@@ -2,12 +2,12 @@
 
 namespace App\Livewire\Project;
 
-use Livewire\Component;
-use Livewire\WithPagination;
 use App\Models\Project;
+use App\Models\Product;
 use App\Models\Vendor;
 use App\Models\Customer;
-use App\Models\Product;
+use Livewire\Component;
+use Livewire\WithPagination;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -18,9 +18,8 @@ class ProjectList extends Component
     // Properties untuk form
     public $vendor_id;
     public $customer_id;
-    public $product_id;
     public $project_header;
-    public $project_value;
+    public $project_value = 0;
     public $project_duration_start;
     public $project_duration_end;
     public $project_detail;
@@ -42,29 +41,44 @@ class ProjectList extends Component
     public $project_id;
     public $selectedProject = null;
 
-    protected $queryString = ['search', 'vendorFilter', 'customerFilter', 'statusFilter', 'dateFilter'];
+    // Properties untuk multiple products
+    public $selectedProducts = [];
+    public $quantities = [];
+    public $productPrices = [];
+    public $productSubtotals = [];
+    public $total = 0;
 
-    protected $rules = [
-        'vendor_id' => 'required|exists:vendors,vendor_id',
-        'customer_id' => 'required|exists:customers,customer_id',
-        'product_id' => 'required|exists:products,product_id',
-        'project_header' => 'required|string|max:100',
-        'project_value' => 'required|numeric|min:0',
-        'project_duration_start' => 'required|date',
-        'project_duration_end' => 'required|date|after:project_duration_start',
-        'project_detail' => 'required|string'
+    protected $queryString = [
+        'search',
+        'vendorFilter',
+        'customerFilter',
+        'statusFilter',
+        'dateFilter'
     ];
+
+    public function rules()
+    {
+        return [
+            'vendor_id' => 'required|exists:vendors,vendor_id',
+            'customer_id' => 'required|exists:customers,customer_id',
+            'project_header' => 'required|string|max:100',
+            'project_duration_start' => 'required|date',
+            'project_duration_end' => 'required|date|after:project_duration_start',
+            'project_detail' => 'required|string',
+            'selectedProducts' => 'required|array|min:1',
+        ];
+    }
 
     protected $messages = [
         'vendor_id.required' => 'Please select a vendor',
         'customer_id.required' => 'Please select a customer',
-        'product_id.required' => 'Please select a product',
         'project_header.required' => 'Project header is required',
-        'project_value.required' => 'Project value is required',
         'project_duration_start.required' => 'Start date is required',
         'project_duration_end.required' => 'End date is required',
         'project_duration_end.after' => 'End date must be after start date',
-        'project_detail.required' => 'Project detail is required'
+        'project_detail.required' => 'Project detail is required',
+        'selectedProducts.required' => 'Please select at least one product',
+        'selectedProducts.min' => 'Please select at least one product',
     ];
 
     public function mount()
@@ -88,6 +102,49 @@ class ProjectList extends Component
         }
     }
 
+    public function updatedSelectedProducts($value, $productId)
+    {
+        if ($value) {
+            if (!isset($this->quantities[$productId])) {
+                $this->quantities[$productId] = 1;
+                $product = Product::find($productId);
+                if ($product) {
+                    $this->productPrices[$productId] = $product->product_price;
+                    $this->calculateSubtotal($productId);
+                }
+            }
+        } else {
+            unset($this->quantities[$productId]);
+            unset($this->productPrices[$productId]);
+            unset($this->productSubtotals[$productId]);
+        }
+        $this->calculateTotal();
+    }
+
+    public function updatedQuantities($value, $productId)
+    {
+        if (isset($this->productPrices[$productId])) {
+            $this->calculateSubtotal($productId);
+            $this->calculateTotal();
+        }
+    }
+
+    public function calculateSubtotal($productId)
+    {
+        if (isset($this->quantities[$productId]) && isset($this->productPrices[$productId])) {
+            $this->productSubtotals[$productId] = $this->productPrices[$productId] * $this->quantities[$productId];
+        }
+    }
+
+    public function calculateTotal()
+    {
+        $this->total = 0;
+        foreach ($this->productSubtotals as $subtotal) {
+            $this->total += $subtotal;
+        }
+        $this->project_value = $this->total;
+    }
+
     public function getProjectStatus($project)
     {
         $startDate = Carbon::parse($project->project_duration_start);
@@ -100,39 +157,34 @@ class ProjectList extends Component
                 'color' => 'gray',
                 'days_remaining' => $today->diffInDays($startDate) . ' days until start'
             ];
-        } elseif ($today > $endDate) {
-            $delay = $endDate->diffInDays($today);
+        }
+
+        if ($today > $endDate) {
+            $overdue = $today->diffInDays($endDate);
             return [
                 'status' => 'Completed',
-                'color' => $delay > 0 ? 'red' : 'green',
-                'days_remaining' => $delay > 0 ? $delay . ' days overdue' : 'Completed on time'
-            ];
-        } else {
-            $totalDays = $startDate->diffInDays($endDate) ?: 1;
-            $elapsedDays = $startDate->diffInDays($today);
-            $progress = min(100, max(0, ($elapsedDays / $totalDays) * 100));
-            $daysLeft = $today->diffInDays($endDate);
-
-            return [
-                'status' => 'In Progress',
-                'color' => $progress >= ($elapsedDays / $totalDays) * 100 ? 'blue' : 'yellow',
-                'days_remaining' => $daysLeft . ' days remaining',
-                'progress' => $progress
+                'color' => 'green',
+                'days_remaining' => 'Completed ' . $overdue . ' days ago'
             ];
         }
-    }
 
-    public function getProjectValue($value)
-    {
-        return number_format($value, 0, ',', '.');
+        // Project in progress
+        $totalDays = $startDate->diffInDays($endDate) ?: 1;
+        $daysLeft = $today->diffInDays($endDate);
+        $progress = (($totalDays - $daysLeft) / $totalDays) * 100;
+
+        return [
+            'status' => 'In Progress',
+            'color' => 'blue',
+            'days_remaining' => $daysLeft . ' days remaining',
+            'progress' => $progress
+        ];
     }
 
     public function openModal()
     {
         $this->resetValidation();
-        $this->resetExcept(['search', 'vendorFilter', 'customerFilter', 'statusFilter', 'dateFilter']);
-        $this->project_duration_start = now()->format('Y-m-d');
-        $this->project_duration_end = now()->addMonths(1)->format('Y-m-d');
+        $this->resetForm();
         $this->showModal = true;
     }
 
@@ -148,23 +200,31 @@ class ProjectList extends Component
         $this->editMode = true;
         $this->project_id = $id;
 
-        $project = Project::findOrFail($id);
-        
+        $project = Project::with('products')->findOrFail($id);
+
         $this->vendor_id = $project->vendor_id;
         $this->customer_id = $project->customer_id;
-        $this->product_id = $project->product_id;
         $this->project_header = $project->project_header;
         $this->project_value = $project->project_value;
         $this->project_duration_start = $project->project_duration_start->format('Y-m-d');
         $this->project_duration_end = $project->project_duration_end->format('Y-m-d');
         $this->project_detail = $project->project_detail;
 
+        // Load existing products
+        foreach ($project->products as $product) {
+            $this->selectedProducts[$product->product_id] = true;
+            $this->quantities[$product->product_id] = $product->pivot->quantity;
+            $this->productPrices[$product->product_id] = $product->pivot->price_at_time;
+            $this->productSubtotals[$product->product_id] = $product->pivot->subtotal;
+        }
+
+        $this->calculateTotal();
         $this->showModal = true;
     }
 
     public function showDetail($id)
     {
-        $this->selectedProject = Project::with(['vendor', 'customer', 'product'])->findOrFail($id);
+        $this->selectedProject = Project::with(['vendor', 'customer', 'products'])->findOrFail($id);
         $this->showDetailModal = true;
     }
 
@@ -178,15 +238,16 @@ class ProjectList extends Component
     {
         try {
             DB::beginTransaction();
-            
+
             $project = Project::findOrFail($this->project_id);
+            $project->products()->detach();
             $project->delete();
-            
+
             DB::commit();
-            
+
             $this->showDeleteModal = false;
             $this->dispatch('project-deleted', 'Project deleted successfully!');
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
             session()->flash('error', 'Error deleting project: ' . $e->getMessage());
@@ -200,31 +261,38 @@ class ProjectList extends Component
         try {
             DB::beginTransaction();
 
-            $data = [
+            $projectData = [
                 'vendor_id' => $this->vendor_id,
                 'customer_id' => $this->customer_id,
-                'product_id' => $this->product_id,
                 'project_header' => $this->project_header,
-                'project_value' => $this->project_value,
+                'project_value' => $this->total,
                 'project_duration_start' => $this->project_duration_start,
                 'project_duration_end' => $this->project_duration_end,
-                'project_detail' => $this->project_detail
+                'project_detail' => $this->project_detail,
             ];
 
             if ($this->editMode) {
                 $project = Project::findOrFail($this->project_id);
-                $project->update($data);
-                $message = 'Project updated successfully!';
+                $project->update($projectData);
+                $project->products()->detach();
             } else {
-                Project::create($data);
-                $message = 'Project created successfully!';
+                $project = Project::create($projectData);
+            }
+
+            foreach ($this->selectedProducts as $productId => $selected) {
+                if ($selected) {
+                    $project->products()->attach($productId, [
+                        'quantity' => $this->quantities[$productId],
+                        'price_at_time' => $this->productPrices[$productId],
+                        'subtotal' => $this->productSubtotals[$productId]
+                    ]);
+                }
             }
 
             DB::commit();
 
-            $this->showModal = false;
-            $this->resetForm();
-            $this->dispatch('project-saved', $message);
+            $this->dispatch('project-saved', $this->editMode ? 'Project updated successfully!' : 'Project created successfully!');
+            $this->closeModal();
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -237,20 +305,25 @@ class ProjectList extends Component
         $this->reset([
             'vendor_id',
             'customer_id',
-            'product_id',
             'project_header',
             'project_value',
             'project_detail',
+            'selectedProducts',
+            'quantities',
+            'productPrices',
+            'productSubtotals',
+            'total',
             'editMode',
             'project_id'
         ]);
+
         $this->project_duration_start = now()->format('Y-m-d');
         $this->project_duration_end = now()->addMonths(1)->format('Y-m-d');
     }
 
     public function render()
     {
-        $query = Project::with(['vendor', 'customer', 'product'])
+        $query = Project::with(['vendor', 'customer', 'products'])
             ->when($this->search, function($q) {
                 $q->where(function($query) {
                     $query->where('project_header', 'like', '%' . $this->search . '%')
@@ -272,21 +345,6 @@ class ProjectList extends Component
             ->when($this->dateFilter, function($q) {
                 $q->whereDate('project_duration_start', '<=', $this->dateFilter)
                   ->whereDate('project_duration_end', '>=', $this->dateFilter);
-            })
-            ->when($this->statusFilter, function($q) {
-                $today = now();
-                switch($this->statusFilter) {
-                    case 'not_started':
-                        $q->where('project_duration_start', '>', $today);
-                        break;
-                    case 'in_progress':
-                        $q->where('project_duration_start', '<=', $today)
-                          ->where('project_duration_end', '>=', $today);
-                        break;
-                    case 'completed':
-                        $q->where('project_duration_end', '<', $today);
-                        break;
-                }
             })
             ->orderBy($this->sortField, $this->sortDirection);
 

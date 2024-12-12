@@ -2,20 +2,37 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Vendor extends Model
 {
-    use HasFactory;
+    protected $primaryKey = 'vendor_id';
 
-    // Tentukan kolom primary key yang benar
-    protected $primaryKey = 'vendor_id';  // Sesuaikan dengan nama kolom primary key
+    protected $fillable = [
+        'user_id',
+        'vendor_name',
+        'vendor_phone',
+        'vendor_email',
+        'vendor_address'
+    ];
+    
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
-    // Jika kolom primary key bukan integer, Anda bisa mengubah tipe datanya
-    protected $keyType = 'int';
     public function interactions()
     {
-        return $this->hasMany(CustomerInteraction::class, 'vendor_id');
+        return $this->hasMany(CustomerInteraction::class, 'vendor_id', 'vendor_id');
+    }
+
+    public function projects()
+    {
+        return $this->hasMany(Project::class, 'vendor_id', 'vendor_id');
+    }
+
+    public function priceQuotations()
+    {
+        return $this->hasMany(PriceQuotation::class, 'vendor_id', 'vendor_id');
     }
 }
