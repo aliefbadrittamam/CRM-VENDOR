@@ -77,6 +77,9 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Value
                     </th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                    </th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -92,11 +95,27 @@
                         <td class="px-6 py-4">
                             <div class="text-sm text-gray-900">{{ $project->customer->customer_name }}</div>
                         </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm text-gray-900">
-                                {{ Carbon\Carbon::parse($project->project_duration_start)->format('d M Y') }}
-                                <br>
-                                {{ Carbon\Carbon::parse($project->project_duration_end)->format('d M Y') }}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm space-y-2">
+                                <!-- Start Date -->
+                                <div class="flex items-center text-green-600">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span class="font-medium">
+                                        {{ Carbon\Carbon::parse($project->project_duration_start)->format('d M Y') }}
+                                    </span>
+                                </div>
+                                
+                                <!-- End Date -->
+                                <div class="flex items-center text-red-600">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span class="font-medium">
+                                        {{ Carbon\Carbon::parse($project->project_duration_end)->format('d M Y') }}
+                                    </span>
+                                </div>
                             </div>
                         </td>
                         <td class="px-6 py-4">
@@ -113,6 +132,7 @@
                                 </div>
                             </div>
                         </td>
+                        
                         <td class="px-6 py-4">
                             <div class="text-sm font-medium text-gray-900">
                                 Rp {{ number_format($project->project_value, 0, ',', '.') }}
@@ -181,40 +201,63 @@
                                         @enderror
                                     </div>
 
-                                    <!-- Products Field -->
-                                    <div class="mb-4">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Products</label>
-                                        <div class="mt-2 space-y-2 max-h-60 overflow-y-auto">
-                                            @foreach ($products as $product)
-                                                <div class="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded">
-                                                    <input type="checkbox"
-                                                        wire:model.live="selectedProducts.{{ $product->product_id }}"
-                                                        value="{{ $product->product_id }}"
-                                                        class="rounded border-gray-300 text-blue-600">
-                                                    <label class="flex-1">
-                                                        <span class="font-medium">{{ $product->product_name }}</span>
-                                                        <span class="text-gray-500"> - Rp
-                                                            {{ number_format($product->product_price, 0, ',', '.') }}</span>
-                                                    </label>
-                                                    @if (in_array($product->product_id, $selectedProducts))
-                                                        <div class="flex items-center space-x-2">
-                                                            <input type="number"
-                                                                wire:model.live="quantities.{{ $product->product_id }}"
-                                                                class="w-20 rounded-md border-gray-300" min="1"
-                                                                placeholder="Qty">
-                                                            <span class="text-gray-500">
-                                                                Rp
-                                                                {{ isset($productSubtotals[$product->product_id]) ? number_format($productSubtotals[$product->product_id], 0, ',', '.') : '0' }}
-                                                            </span>
-                                                        </div>
-                                                    @endif
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                        @error('selectedProducts')
-                                            <span class="text-sm text-red-600">{{ $message }}</span>
-                                        @enderror
-                                    </div>
+                                    <!-- Products Selection -->
+<div class="space-y-4">
+    <label class="block text-sm font-medium text-gray-700">Products</label>
+    <div class="mt-2 space-y-2 max-h-60 overflow-y-auto">
+        @foreach($products as $product)
+            <div class="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded">
+                <input type="checkbox" 
+                    wire:model.live="selectedProducts.{{ $product->product_id }}"
+                    class="rounded border-gray-300">
+                <label class="flex-1">
+                    <span class="font-medium">{{ $product->product_name }}</span>
+                    <span class="text-gray-500"> - Rp {{ number_format($product->product_price, 0, ',', '.') }}</span>
+                </label>
+                @if(isset($selectedProducts[$product->product_id]) && $selectedProducts[$product->product_id])
+                    <input type="number" 
+                        wire:model.live="quantities.{{ $product->product_id }}"
+                        class="w-20 rounded-md border-gray-300"
+                        min="1"
+                        placeholder="Qty">
+                    <span class="text-gray-600">
+                        Rp {{ number_format($productSubtotals[$product->product_id] ?? 0, 0, ',', '.') }}
+                    </span>
+                @endif
+            </div>
+        @endforeach
+    </div>
+</div>
+
+<!-- Products Total -->
+<div class="mt-4">
+    <div class="text-sm font-medium text-gray-700">Products Total</div>
+    <div class="text-lg font-semibold">
+        Rp {{ number_format($total, 0, ',', '.') }}
+    </div>
+</div>
+
+<!-- Additional Value -->
+<div class="mt-4">
+    <label class="block text-sm font-medium text-gray-700">Additional Project Value</label>
+    <div class="mt-1 relative rounded-md shadow-sm">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span class="text-gray-500 sm:text-sm">Rp</span>
+        </div>
+        <input type="number"
+            wire:model.live="additional_value"
+            class="mt-1 block w-full pl-12 rounded-md border-gray-300"
+            placeholder="0">
+    </div>
+</div>
+
+<!-- Total Project Value -->
+<div class="mt-4">
+    <div class="text-sm font-medium text-gray-700">Total Project Value</div>
+    <div class="text-xl font-bold text-blue-600">
+        Rp {{ number_format($project_value, 0, ',', '.') }}
+    </div>
+</div>
 
                                     <!-- Total Amount (Read Only) -->
                                     <div class="mb-4">
