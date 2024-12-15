@@ -14,7 +14,10 @@ class Customer extends Model
         'customer_phone',
         'customer_address'
     ];
-
+    public function projects()
+    {
+        return $this->hasMany(Project::class, 'customer_id', 'customer_id');
+    }
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
