@@ -606,7 +606,7 @@
     </div>
     @endif
    
-    @if ($showDetailModal && $selectedProject)
+    {{-- @if ($showDetailModal && $selectedProject)
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
             <div class="fixed inset-0 z-10 overflow-y-auto">
                 <div class="flex min-h-full items-center justify-center p-4">
@@ -715,7 +715,7 @@
                 </div>
             </div>
         </div>
-    @endif
+    @endif --}}
     <!-- Flash Message -->
     <div x-data="{ show: false, message: '' }"
         x-on:project-saved.window="show = true; message = $event.detail; setTimeout(() => show = false, 3000)"
