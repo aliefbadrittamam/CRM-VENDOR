@@ -60,8 +60,13 @@ Route::middleware([
     // Marketing
     Route::prefix('marketing')->group(function () {
         Route::get('/whatsapp', [MarketingController::class, 'whatsapp'])->name('marketing.whatsapp');
+        Route::get('whatsapp/send/{campaignId}', [MarketingController::class, 'sendCustomer'])->name('marketing.send');//go to target customer choice page
+        Route::post('/send', [MarketingController::class, 'send'])->name('send.whatsapp');
         Route::get('/leads', [MarketingController::class, 'leads'])->name('marketing.leads');
         Route::get('/analysis', [MarketingController::class, 'analysis'])->name('marketing.analysis');
+        Route::post('/save-selected-customers', [MarketingController::class, 'saveSelectedCustomers'])->name('saveSelectedCustomers');
+        Route::get('/detail/{campaignId}', [MarketingController::class, 'detailShow'])->name('marketing.detail');
+        Route::get('/history', [MarketingController::class, 'historyShow'])->name('message.history');
     });
 
     // Products
@@ -72,10 +77,10 @@ Route::middleware([
     });
 
     // Projects 
-    Route::prefix('projects')->name('projects.')->group(function () {
-        Route::get('/', [ProjectController::class, 'index'])->name('index');
-        Route::get('/timeline', [ProjectController::class, 'timeline'])->name('timeline');
-        Route::get('/status', [ProjectController::class, 'status'])->name('status');
+    Route::prefix('projects')->group(function () {
+        Route::get('/', [ProjectController::class, 'index'])->name('projects.index');
+        Route::get('/timeline', [ProjectController::class, 'timeline'])->name('projects.timeline');
+        Route::get('/status', [ProjectController::class, 'status'])->name('projects.status');
     });
 
     // Reports

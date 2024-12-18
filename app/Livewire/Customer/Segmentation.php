@@ -79,7 +79,13 @@ class Segmentation extends Component
     private function getCustomers()
     {
         return Customer::select([
-            'customers.*',
+            'customers.customer_id',
+            'customers.customer_name', 
+            'customers.customer_email',
+            'customers.customer_phone',   // Perubahan dari phone ke customer_phone
+            'customers.customer_address', // Perubahan dari address ke customer_address
+            'customers.created_at',
+            'customers.updated_at',
             DB::raw('COUNT(DISTINCT ci.interaction_id) as interaction_count'),
             DB::raw('COUNT(DISTINCT p.project_id) as project_count'),
             DB::raw('COALESCE(SUM(s.fixed_amount), 0) as total_sales'),
@@ -107,7 +113,15 @@ class Segmentation extends Component
                     ->where('interaction_type', $this->interactionType);
             });
         })
-        ->groupBy('customers.customer_id')
+        ->groupBy([
+            'customers.customer_id',
+            'customers.customer_name',
+            'customers.customer_email',
+            'customers.customer_phone',   // Perubahan dari phone ke customer_phone
+            'customers.customer_address', // Perubahan dari address ke customer_address
+            'customers.created_at',
+            'customers.updated_at'
+        ])
         ->having('interaction_count', '>=', $this->minimumInteractions)
         ->orderBy($this->sortField, $this->sortDirection)
         ->paginate(10);

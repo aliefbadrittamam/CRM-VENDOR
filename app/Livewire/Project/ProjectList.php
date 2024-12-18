@@ -10,14 +10,16 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema; 
+use Illuminate\Support\Facades\Schema;
+use App\Models\CustomerInteraction; 
+use Illuminate\Support\Facades\Auth; // Add this to your imports at the top
+
 
 
 class ProjectList extends Component
 {
     use WithPagination;
     
-
     // Properties untuk form
     public $vendor_id;
     public $customer_id;
@@ -26,6 +28,8 @@ class ProjectList extends Component
     public $project_duration_start;
     public $project_duration_end;
     public $project_detail;
+    public $project_base_value = 0; // Nilai project dasar
+    public $total_value = 0;        // Total keseluruhan
 
     // Properties untuk filter dan pencarian
     public $search = '';
@@ -49,9 +53,9 @@ class ProjectList extends Component
     public $quantities = [];
     public $productPrices = [];
     public $productSubtotals = [];
-    public $total = 0;
-    public $additional_value = 0; // nilai project diluar products
-
+    public $total_products = 0;
+    public $selectedStatus = [];
+    public $pendingDuration = [];
 
     protected $queryString = [
         'search',
@@ -97,15 +101,25 @@ class ProjectList extends Component
         $this->resetPage();
     }
 
-    public function sortBy($field)
+    public function calculateSubtotal($productId)
     {
-        if ($this->sortField === $field) {
-            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            $this->sortField = $field;
-            $this->sortDirection = 'asc';
+        if (isset($this->quantities[$productId]) && isset($this->productPrices[$productId])) {
+            $this->productSubtotals[$productId] = $this->productPrices[$productId] * $this->quantities[$productId];
         }
+        $this->calculateTotal();
     }
+
+    public function calculateTotal()
+    {
+        $this->total_products = array_sum($this->productSubtotals);
+        $this->total_value = $this->total_products + floatval($this->project_value);
+    }
+    
+    public function updatedProjectValue()
+    {
+        $this->calculateTotal();
+    }
+    
 
     public function updatedSelectedProducts($value, $productId)
     {
@@ -130,63 +144,62 @@ class ProjectList extends Component
     {
         if (isset($this->productPrices[$productId])) {
             $this->calculateSubtotal($productId);
-            $this->calculateTotal();
         }
     }
 
-    public function calculateSubtotal($productId)
+    public function sortBy($field)
     {
-        if (isset($this->quantities[$productId]) && isset($this->productPrices[$productId])) {
-            $this->productSubtotals[$productId] = $this->productPrices[$productId] * $this->quantities[$productId];
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
         }
-    }
-
-    public function calculateTotal()
-    {
-        $this->total = 0;
-        foreach ($this->productSubtotals as $subtotal) {
-            $this->total += $subtotal;
-        }
-        
-        $this->project_value = $this->total + floatval($this->additional_value);
     }
 
     public function getProjectStatus($project)
-{
-    $startDate = Carbon::parse($project->project_duration_start);
-    $endDate = Carbon::parse($project->project_duration_end);
-    $today = now();
+    {
+        $startDate = Carbon::parse($project->project_duration_start);
+        $endDate = Carbon::parse($project->project_duration_end);
+        $today = now();
 
-    if ($today < $startDate) {
-        $days = $today->diffInDays($startDate);
+        // Handle Pending Status
+        if (isset($this->selectedStatus[$project->project_id]) && 
+            $this->selectedStatus[$project->project_id] === 'pending') {
+            $pendingDays = $this->pendingDuration[$project->project_id] ?? 0;
+            return [
+                'status' => 'Pending',
+                'color' => 'yellow',
+                'progress' => 0,
+                'days_remaining' => $pendingDays > 0 ? "Pending for $pendingDays days" : 'Pending'
+            ];
+        }
+
+        // Handle Completed Status
+        if ($project->status === 'completed' || 
+            (isset($this->selectedStatus[$project->project_id]) && 
+             $this->selectedStatus[$project->project_id] === 'completed')) {
+            return [
+                'status' => 'Completed',
+                'color' => 'green',
+                'progress' => 100,
+                'days_remaining' => 'Completed'
+            ];
+        }
+
+        // Calculate progress for in-progress projects
+        $totalDays = $startDate->diffInDays($endDate) ?: 1;
+        $daysElapsed = $startDate->diffInDays($today);
+        $progress = min(100, round(($daysElapsed / $totalDays) * 100));
+        $daysRemaining = $endDate->diffInDays($today);
+
         return [
-            'status' => 'Not Started',
-            'color' => 'gray',
-            'days_remaining' => round($days) . ' days until start' // Dibulatkan
+            'status' => 'In Progress',
+            'color' => 'blue',
+            'progress' => $progress,
+            'days_remaining' => $daysRemaining . ' days remaining'
         ];
     }
-
-    if ($today > $endDate) {
-        $overdue = $today->diffInDays($endDate);
-        return [
-            'status' => 'Completed',
-            'color' => 'green',
-            'days_remaining' => 'Completed ' . round($overdue) . ' days ago' // Dibulatkan
-        ];
-    }
-
-    // Project is in progress
-    $totalDays = $startDate->diffInDays($endDate) ?: 1;
-    $daysLeft = $today->diffInDays($endDate);
-    $progress = (($totalDays - $daysLeft) / $totalDays) * 100;
-
-    return [
-        'status' => 'In Progress',
-        'color' => 'blue',
-        'days_remaining' => round($daysLeft) . ' days remaining', // Dibulatkan
-        'progress' => round($progress) // Dibulatkan juga untuk progress
-    ];
-}
 
     public function openModal()
     {
@@ -199,6 +212,60 @@ class ProjectList extends Component
     {
         $this->showModal = false;
         $this->resetForm();
+    }
+    public function updateProjectStatus($projectId, $newStatus)
+    {
+        try {
+            DB::beginTransaction();
+            
+            $project = Project::findOrFail($projectId);
+            $now = now();
+
+            switch ($newStatus) {
+                case 'completed':
+                    $project->update([
+                        'status' => 'completed',
+                        'project_duration_end' => $now
+                    ]);
+                    break;
+
+                case 'pending':
+                    $pendingDays = $this->pendingDuration[$projectId] ?? 0;
+                    if ($pendingDays > 0) {
+                        $project->update([
+                            'status' => 'pending',
+                            'project_duration_end' => $now->copy()->addDays($pendingDays)
+                        ]);
+                    }
+                    break;
+
+                case 'in_progress':
+                    $project->update([
+                        'status' => 'in_progress',
+                        'project_duration_end' => $now->copy()->addDays(30) // Default or calculate based on original duration
+                    ]);
+                    break;
+            }
+
+            // Log the status change
+            CustomerInteraction::create([
+                'customer_id' => $project->customer_id,
+                'user_id' => auth()->id(),
+                'vendor_id' => $project->vendor_id,
+                'interaction_type' => 'Other',
+                'interaction_date' => $now,
+                'notes' => "Project status updated to " . ucfirst($newStatus) . 
+                          ($newStatus === 'pending' ? " for {$this->pendingDuration[$projectId]} days" : "") .
+                          ": {$project->project_header}"
+            ]);
+
+            DB::commit();
+            $this->dispatch('project-updated', 'Project status updated successfully');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('error', 'Error updating project status: ' . $e->getMessage());
+        }
     }
 
     public function edit($id)
@@ -217,7 +284,6 @@ class ProjectList extends Component
         $this->project_duration_end = $project->project_duration_end->format('Y-m-d');
         $this->project_detail = $project->project_detail;
 
-        // Load existing products
         foreach ($project->products as $product) {
             $this->selectedProducts[$product->product_id] = true;
             $this->quantities[$product->product_id] = $product->pivot->quantity;
@@ -229,20 +295,6 @@ class ProjectList extends Component
         $this->showModal = true;
     }
 
-    public function showDetail($projectId)
-{
-    $this->selectedProject = Project::with(['vendor', 'customer', 'products', 'product'])
-        ->findOrFail($projectId);
-    $this->showDetailModal = true;
-}
-public function closeDetailModal()
-{
-    $this->showDetailModal = false;
-    $this->selectedProject = null;
-}
-
-
-
     public function confirmDelete($id)
     {
         $this->project_id = $id;
@@ -253,35 +305,20 @@ public function closeDetailModal()
     {
         try {
             DB::beginTransaction();
-    
+
             $project = Project::findOrFail($this->project_id);
             
-            // Hapus relasi price quotations
+            // Delete relationships
             $project->priceQuotations()->delete();
-    
-            // Detach products
             $project->products()->detach();
-    
-            // Hapus project
             $project->delete();
-    
+
             DB::commit();
-    
-            // Tutup modal delete
             $this->showDeleteModal = false;
-    
-            // Dispatch event untuk notifikasi
             $this->dispatch('project-deleted', 'Project deleted successfully!');
-    
+
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            // Log error
-            \Log::error('Project deletion failed', [
-                'project_id' => $this->project_id,
-                'error_message' => $e->getMessage()
-            ]);
-    
             session()->flash('error', 'Error deleting project: ' . $e->getMessage());
         }
     }
@@ -294,29 +331,30 @@ public function closeDetailModal()
             'project_header' => 'required|string|max:100',
             'project_duration_start' => 'required|date',
             'project_duration_end' => 'required|date|after:project_duration_start',
-            'project_detail' => 'required|string|max:255',
-            'selectedProducts' => 'required|array|min:1',
-            'additional_value' => 'numeric|min:0'
+            'project_detail' => 'required|string',
+            'project_value' => 'required|numeric|min:0',
+            'selectedProducts' => 'required|array|min:1'
         ]);
 
         try {
             DB::beginTransaction();
 
-            // Ambil produk pertama sebagai produk utama
             $mainProductId = array_key_first(array_filter($this->selectedProducts));
 
+            // Simpan project dengan total value dari products
             $project = Project::create([
                 'vendor_id' => $this->vendor_id,
                 'customer_id' => $this->customer_id,
                 'product_id' => $mainProductId,
                 'project_header' => $this->project_header,
-                'project_value' => $this->project_value, // Total keseluruhan
+                'project_value' => $this->project_value, // Total dari products
                 'project_duration_start' => $this->project_duration_start,
                 'project_duration_end' => $this->project_duration_end,
                 'project_detail' => $this->project_detail,
+                'project_value' => $this->total_value,  
             ]);
 
-            // Simpan detail products
+            // Simpan products
             foreach($this->selectedProducts as $productId => $selected) {
                 if($selected) {
                     $project->products()->attach($productId, [
@@ -334,14 +372,17 @@ public function closeDetailModal()
 
         } catch (\Exception $e) {
             DB::rollBack();
-            session()->flash('error', 'Error saving project: ' . $e->getMessage());
+            session()->flash('error', 'Error saving project: ' . $e->getMessage()); 
         }
     }
-    public function updatedAdditionalValue()
+
+    public function showDetail($projectId)
     {
-        $this->calculateTotal();    
+        $this->selectedProject = Project::with(['vendor', 'customer', 'products'])
+            ->findOrFail($projectId);
+        $this->showDetailModal = true;
     }
-    
+
     private function resetForm()
     {
         $this->reset([
@@ -354,7 +395,7 @@ public function closeDetailModal()
             'quantities',
             'productPrices',
             'productSubtotals',
-            'total',
+            'total_products',
             'editMode',
             'project_id'
         ]);
